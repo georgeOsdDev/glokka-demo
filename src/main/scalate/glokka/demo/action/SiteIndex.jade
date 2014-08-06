@@ -1,0 +1,184 @@
+- import glokka.demo.action._
+
+hr
+
+div.row#login
+  div.row.form-group
+    div.row
+      label.col-sm-2.control-labe(for="name") YourName
+      div.col-sm-6
+        input.form-control(type="text" id="name" placeholder="Anonymous")
+    div.row
+      label.col-sm-2.control-labe(for="api") APIKEY
+      div.col-sm-6
+        input.form-control(type="text" id="api" placeholder="hello")
+    div.row
+      div.col-sm-offset-2.col-sm-10
+        button.btn.btn-default#btn_connect Connect
+br
+div.row
+  div.col-md-12#output(style="overflow-x: hidden; overflow-y: auto;")
+
+br
+
+div.row#controller(style="display:none;")
+  div.row
+    div.well.row.form-group
+      div.row
+        label.col-sm-2.control-labe(for="message") Message
+        div.col-sm-8.input-group
+          input.form-control(type="text" id="msg" placeholder="Type text here")
+          span.input-group-btn
+            button.btn.btn-default#btn_send Send
+      br
+      div.row
+        div.col-sm-offset-2.col-sm-10
+          button.btn.btn-primary#btn_pull Get clients count
+          button.btn.btn-primary#btn_subscribe Subscribe
+          button.btn.btn-primary#btn_unsubscribe Unsubscribe
+
+-
+  jsAddToView(
+    // This is durty snippets just for demo.
+    "var url = '" + sockJsUrl[HubClientActor] + "';" +
+    """
+    var socket;
+    var counter = -1;
+    var callbacks = {};
+
+    $("#btn_connect").on("click",function(e){
+      e.preventDefault();
+      var loginRequest = {
+        tag:"login",
+        apikey:$("#api").val(),
+        name:$("#name").val(),
+        seq:counter
+      }
+      callbacks[counter] = function(obj){
+        var text;
+        if(obj.error === 0){
+          text = '<b>[Success: Connect with HUB]</b><br />';
+          text = text+"hub-node: " + obj.hub +'<br />';
+          text = text+"your-node: " + obj.node +'<br />';
+          $("#controller").show();
+          $("login").hide();
+        } else {
+          text = '<b style="color:red">[Fail: Connect with HUB]</b>'+obj.message+'<br />';
+        }
+        xitrum.appendAndScroll('#output', text);
+      }
+      socket.send(JSON.stringify(loginRequest));
+      counter++;
+    });
+
+    $("#btn_send").on("click",function(e){
+      e.preventDefault();
+      var pushRequest = {
+        tag:"push",
+        cmd:"text",
+        body:$("#msg").val(),
+        seq:counter
+      }
+      callbacks[counter] = function(obj){
+        var text;
+        if(obj.error === 0){
+          text = '<b>[Success: Push to HUB]</b><br />';
+        } else {
+          text = '<b style="color:red">[Fail: Push to HUB]</b>'+obj.message+'<br />';
+        }
+        xitrum.appendAndScroll('#output', text);
+      }
+      socket.send(JSON.stringify(pushRequest));
+      counter++;
+    });
+
+    $("#btn_pull").on("click",function(e){
+      e.preventDefault();
+      var pullRequest = {
+        tag:"pull",
+        cmd:"count",
+        seq:counter
+      }
+      callbacks[counter] = function(obj){
+        var text;
+        if(obj.error === 0){
+          text = '<b>[Success: Pull from HUB]</b><br />';
+        } else {
+          text = '<b style="color:red">[Fail: Pull from HUB]</b>'+obj.message+'<br />';
+        }
+        xitrum.appendAndScroll('#output', text);
+      }
+      socket.send(JSON.stringify(pullRequest));
+      counter++;
+    });
+
+    $("#btn_subscribe").on("click",function(e){
+      e.preventDefault();
+      var subscribeRequest = {
+        tag:"subscribe",
+        seq:counter
+      }
+      callbacks[counter] = function(obj){
+        var text;
+        if(obj.error === 0){
+          text = '<b>[Success: Subscribe from HUB]</b><br />';
+        } else {
+          text = '<b style="color:red">[Fail: Subscribe from HUB]</b>'+obj.message+'<br />';
+        }
+        xitrum.appendAndScroll('#output', text);
+      }
+      socket.send(JSON.stringify(subscribeRequest));
+      counter++;
+    });
+
+    $("#btn_unsubscribe").on("click",function(e){
+      e.preventDefault();
+      var unsubscribeRequest = {
+        tag:"unsubscribe",
+        seq:counter
+      }
+      callbacks[counter] = function(obj){
+        var text;
+        if(obj.error === 0){
+          text = '<b>[Success: Unsubscribe from HUB]</b><br />';
+        } else {
+          text = '<b style="color:red">[Fail: Unsubscribe from HUB]</b>'+obj.message+'<br />';
+        }
+        xitrum.appendAndScroll('#output', text);
+      }
+      socket.send(JSON.stringify(unsubscribeRequest));
+      counter++;
+    });
+
+    var initSocket = function() {
+      socket = new SockJS(url);
+      socket.counter = 0;
+
+      socket.onopen = function(event) {
+        var text = '<b>[Socket is open]</b><br />';
+        xitrum.appendAndScroll('#output', text);
+      };
+
+      socket.onclose = function(event) {
+        var text = '<b>[Socket is closed]</b><br />';
+        xitrum.appendAndScroll('#output', text);
+        $('#controller').hide();
+      };
+
+      socket.onmessage = function(event) {
+        var obj = JSON.parse(event.data);
+        var text;
+        if (obj.tag === "system") {
+          text = '<b>[SYSTEM MESSAGE from HUB]</b><br />';
+        } else {
+          text = '<b>['+obj.tag.toUpperCase()+' from '+ obj.senderId+' via HUB]</b><br />';
+        }
+        xitrum.appendAndScroll('#output', text);
+        text = '- ' + xitrum.escapeHtml(event.data) + '<br />';
+        xitrum.appendAndScroll('#output', text);
+        if (typeof callbacks[obj.seq] === "function") callbacks[obj.seq](obj);
+      };
+    };
+    initSocket();
+    """
+  )
