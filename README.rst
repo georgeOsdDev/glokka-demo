@@ -2,7 +2,7 @@ Glokka Demo
 ===========
 
 This is a demo project for
-Clustering `Xitrum <https://github.com/xitrum-framework>`_- Servers with `Glokka <hhttps://github.com/xitrum-framework/glokka>`_.
+Clustering `Xitrum <https://github.com/xitrum-framework>`_- Servers with `Glokka <https://github.com/xitrum-framework/glokka>`_.
 
 ::
 
